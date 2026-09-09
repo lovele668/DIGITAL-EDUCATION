@@ -1,0 +1,6 @@
+{
+  "name": "Remix DIGITAL EDUCATION",
+  "description": "Nền tảng quản lý học tập thân thiện dành riêng cho cấp tiểu học, THCS.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
