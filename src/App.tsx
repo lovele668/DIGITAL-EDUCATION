@@ -370,8 +370,31 @@ function TeacherDashboard({
 
     const lines = batchInput.split('\n');
     const newStudents: Student[] = [];
-    for (const line of lines) {
-      const [name, username, password] = line.split(',').map(s => s.trim());
+    
+    // Helper to generate username/password from name
+    const generateCredentials = (name: string, index: number) => {
+      const cleanName = name
+        .toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // Remove accents
+        .replace(/\s+/g, '');
+      const username = `${cleanName}${index + 1}${Math.floor(Math.random() * 100)}`;
+      const password = `hs${Math.floor(Math.random() * 900000) + 100000}`;
+      return { username, password };
+    };
+
+    lines.forEach((line, index) => {
+      const parts = line.split(',').map(s => s.trim());
+      let name, username, password;
+
+      if (parts.length >= 3) {
+        [name, username, password] = parts;
+      } else if (parts[0]) {
+        name = parts[0];
+        const creds = generateCredentials(name, index);
+        username = creds.username;
+        password = creds.password;
+      }
+
       if (name && username && password) {
         newStudents.push({
           id: Date.now().toString() + Math.random(),
@@ -382,10 +405,10 @@ function TeacherDashboard({
           badges: []
         });
       }
-    }
+    });
 
     if (newStudents.length === 0) {
-      alert("Vui lòng kiểm tra định dạng dữ liệu (Tên, Tên đăng nhập, Mật khẩu trên mỗi dòng)");
+      alert("Vui lòng nhập tên học sinh (mỗi tên một dòng)");
       return;
     }
 
