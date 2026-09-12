@@ -235,6 +235,7 @@ function TeacherDashboard({
   
   // Student form state
   const [showAddStudent, setShowAddStudent] = useState(false);
+  const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [addMode, setAddMode] = useState<'single' | 'batch'>('single');
   const [newStudent, setNewStudent] = useState({ name: '', username: '', password: '', avatar: '' });
   const [batchInput, setBatchInput] = useState('');
@@ -365,6 +366,19 @@ function TeacherDashboard({
     setShowAddClass(false);
   };
 
+  const handleExportStudents = () => {
+    if (!selectedClass) return;
+    const worksheet = XLSX.utils.json_to_sheet(selectedClass.students.map(s => ({
+      "Tên": s.name,
+      "Tài khoản": s.username,
+      "Mật khẩu": s.password,
+      "Điểm": s.points
+    })));
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "DanhSachHocSinh");
+    XLSX.writeFile(workbook, `${selectedClass.name}_DanhSachHocSinh.xlsx`);
+  };
+
   const handleAddStudentsBatch = () => {
     if (!viewingClassId) return;
 
@@ -435,6 +449,12 @@ function TeacherDashboard({
     
     setClasses(classes.map(c => {
       if (c.id === viewingClassId) {
+        if (editingStudent) {
+          return {
+            ...c,
+            students: c.students.map(s => s.id === editingStudent.id ? { ...s, ...newStudent, avatar: newStudent.avatar || undefined } : s)
+          };
+        }
         return {
           ...c,
           students: [...c.students, { 
@@ -449,6 +469,7 @@ function TeacherDashboard({
       return c;
     }));
     setNewStudent({ name: '', username: '', password: '', avatar: '' });
+    setEditingStudent(null);
     setShowAddStudent(false);
   };
 
@@ -1059,6 +1080,9 @@ function TeacherDashboard({
                   <button onClick={() => setShowAddStudent(true)} className="px-10 py-5 bg-indigo-600 text-white font-black rounded-[2rem] hover:bg-slate-900 transition-all shadow-2xl flex items-center gap-4 uppercase tracking-widest text-xs group">
                     <Plus size={20} className="group-hover:rotate-90 transition-transform" /> Thêm ngôi sao mới
                   </button>
+                  <button onClick={handleExportStudents} className="px-10 py-5 bg-emerald-600 text-white font-black rounded-[2rem] hover:bg-slate-900 transition-all shadow-2xl flex items-center gap-4 uppercase tracking-widest text-xs group">
+                    <FileUp size={20} /> Xuất Excel
+                  </button>
                 </div>
                 
                 <div className="p-12 flex-1">
@@ -1222,7 +1246,12 @@ function TeacherDashboard({
                            animate={{ opacity: 1, scale: 1 }}
                            transition={{ delay: idx * 0.05 }}
                            key={student.id} 
-                           className="p-10 bg-white/60 backdrop-blur-xl border-2 border-white/20 rounded-[3rem] shadow-sm hover:shadow-xl transition-all flex flex-col items-center text-center group"
+                           onClick={() => {
+                             setEditingStudent(student);
+                             setNewStudent({ name: student.name, username: student.username, password: student.password, avatar: student.avatar || '' });
+                             setShowAddStudent(true);
+                           }}
+                           className="p-10 bg-white/60 backdrop-blur-xl border-2 border-white/20 rounded-[3rem] shadow-sm hover:shadow-xl transition-all flex flex-col items-center text-center group cursor-pointer"
                         >
                            <div className="w-28 h-28 rounded-[2rem] bg-indigo-50 mb-8 group-hover:scale-110 group-hover:rotate-6 transition-all overflow-hidden border-4 border-white shadow-xl">
                               <img src={student.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${student.username}`} alt="Avatar" className="w-full h-full object-cover" />
@@ -1604,7 +1633,7 @@ function TeacherDashboard({
                   className="bg-white/90 backdrop-blur-3xl w-full max-w-md p-10 rounded-[40px] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.3)] space-y-8 border-4 border-white/40 border-t-white/80 border-l-white/60"
                 >
                   <div className="text-center">
-                    <h3 className="text-3xl font-black text-slate-900">Thêm học sinh</h3>
+                    <h3 className="text-3xl font-black text-slate-900">{editingStudent ? 'Chỉnh sửa' : 'Thêm'} học sinh</h3>
                     <p className="text-slate-400 font-bold text-sm mt-2 uppercase tracking-widest">Vào {selectedClass?.name}</p>
                   </div>
                   
@@ -1709,7 +1738,11 @@ function TeacherDashboard({
                       Xác nhận lưu
                     </button>
                     <button 
-                      onClick={() => setShowAddStudent(false)}
+                      onClick={() => {
+                        setShowAddStudent(false);
+                        setEditingStudent(null);
+                        setNewStudent({ name: '', username: '', password: '', avatar: '' });
+                      }}
                       className="w-full py-5 bg-slate-100 text-slate-500 font-black rounded-2xl hover:bg-slate-200 transition-all uppercase tracking-widest"
                     >
                       Hủy bỏ
